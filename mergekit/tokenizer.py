@@ -34,6 +34,7 @@ def get_vocab_size(model_path: ModelPath, trust_remote_code: bool) -> Optional[i
         cfg = transformers.AutoConfig.from_pretrained(
             model_path.path,
             revision=model_path.revision,
+            subfolder=model_path.subfolder,
             trust_remote_code=trust_remote_code,
         )
         return cfg.vocab_size
@@ -54,6 +55,7 @@ def get_stripped_tokenizer(
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         path.path,
         revision=path.revision,
+        subfolder=path.subfolder,
         trust_remote_code=trust_remote_code,
         use_fast=True,
     )
@@ -196,6 +198,7 @@ def build_tokenizer(
             model_tok = transformers.AutoTokenizer.from_pretrained(
                 model.model.path,
                 revision=model.model.revision,
+                subfolder=model.model.subfolder,
                 trust_remote_code=trust_remote_code,
             )
         except Exception as e:
