@@ -349,6 +349,7 @@ def _reshard_model(
     model_hf = transformers.AutoModelForCausalLM.from_pretrained(
         merged.model.path,
         revision=merged.model.revision,
+        subfolder=merged.model.subfolder,
         trust_remote_code=trust_remote_code,
         torch_dtype=torch.bfloat16,
         cache_dir=os.path.join(storage_path, "transformers_cache"),
@@ -360,6 +361,7 @@ def _reshard_model(
         tokenizer = transformers.AutoTokenizer.from_pretrained(
             model.model.path,
             revision=model.model.revision,
+            subfolder=model.model.subfolder,
             trust_remote_code=trust_remote_code,
             use_fast=True,
         )
