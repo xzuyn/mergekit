@@ -128,6 +128,7 @@ def get_gate_params(
         model = AutoModelForCausalLM.from_pretrained(
             model_ref.model.path,
             revision=model_ref.model.revision,
+            subfolder=model_ref.model.subfolder,
             torch_dtype=torch.bfloat16,
             device_map=device,
             low_cpu_mem_usage=True,
