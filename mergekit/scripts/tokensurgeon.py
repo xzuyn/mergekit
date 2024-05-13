@@ -513,6 +513,7 @@ def load_tokenizer(
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         model.model.path,
         revision=model.model.revision,
+        subfolder=model.model.subfolder,
         trust_remote_code=options.trust_remote_code,
     )
 
