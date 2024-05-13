@@ -46,24 +46,40 @@ from mergekit.io import LazyTensorLoader, ShardedTensorIndex
 class ModelPath(BaseModel, frozen=True):
     path: str
     revision: Optional[str] = None
+    subfolder: Optional[str] = None
 
     @model_validator(mode="before")
     def validate_string(cls, value):
         if isinstance(value, str):
             at_ct = value.count("@")
-            if at_ct > 1:
-                raise RuntimeError(f"Invalid model path - multiple @: {value}")
+            as_ct = value.count("*")
+            if at_ct == 1 and as_ct == 1:
+                path, rev_sub = value.split("@")
+                rev, sub = rev_sub.split("*")
+                return {"path": path, "revision": rev, "subfolder": sub}
             elif at_ct == 1:
                 path, rev = value.split("@")
                 return {"path": path, "revision": rev}
+            elif as_ct == 1:
+                path, sub = value.split("*")
+                return {"path": path, "subfolder": sub}
+            elif at_ct > 1:
+                raise RuntimeError(f"Invalid model path - multiple @: {value}")
+            elif as_ct > 1:
+                raise RuntimeError(f"Invalid model path - multiple *: {value}")
             else:
                 return {"path": value}
         return value
 
     def __str__(self):
-        if self.revision:
+        if self.revision and self.subfolder:
+            return f"{self.path}@{self.revision}*{self.subfolder}"
+        elif self.revision:
             return f"{self.path}@{self.revision}"
-        return self.path
+        elif self.subfolder:
+            return f"{self.path}*{self.subfolder}"
+        else:
+            return self.path
 
     def _unique_id(self):
         return (
@@ -107,12 +123,17 @@ class ModelReference(BaseModel, frozen=True):
             model = auto_cls.from_pretrained(
                 self.model.path,
                 revision=self.model.revision,
+                subfolder=self.model.subfolder,
                 torch_dtype=torch.float16,
                 low_cpu_mem_usage=True,
                 trust_remote_code=trust_remote_code,
             )
             model = peft.PeftModel.from_pretrained(
-                model, self.lora.path, revision=self.lora.revision, is_trainable=False
+                model,
+                self.lora.path,
+                revision=self.lora.revision,
+                subfolder=self.lora.subfolder,
+                is_trainable=False
             )
             logging.info(f"Merging {self.lora} into {self.model}")
             model = model.merge_and_unload()
@@ -125,6 +146,7 @@ class ModelReference(BaseModel, frozen=True):
         res = AutoConfig.from_pretrained(
             self.model.path,
             revision=self.model.revision,
+            subfolder=self.mode.subfolder,
             trust_remote_code=trust_remote_code,
         )
         if self.override_architecture:
@@ -139,7 +161,10 @@ class ModelReference(BaseModel, frozen=True):
             has_safetensors = any(
                 fn.lower().endswith(".safetensors")
                 for fn in huggingface_hub.list_repo_files(
-                    path, repo_type="model", revision=self.model.revision
+                    path,
+                    repo_type="model",
+                    revision=self.model.revision,
+                    subfolder=self.model.subfolder
                 )
             )
             patterns = ["tokenizer.model", "*.json"]
@@ -151,6 +176,7 @@ class ModelReference(BaseModel, frozen=True):
             path = huggingface_hub.snapshot_download(
                 path,
                 revision=self.model.revision,
+                subfolder=self.model.subfolder,
                 cache_dir=cache_dir,
                 allow_patterns=patterns,
             )
