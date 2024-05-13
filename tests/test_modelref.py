@@ -25,6 +25,13 @@ class TestModelReference:
         assert mr.lora is None
         assert str(mr) == text
 
+    def test_parse_subfolder(self):
+        text = "hf_user/model*checkpoint-100"
+        mr = ModelReference.parse(text)
+        assert mr.model == ModelPath(path="hf_user/model", subfolder="checkpoint-100")
+        assert mr.lora is None
+        assert str(mr) == text
+
     def test_parse_lora_plus_revision(self):
         text = "hf_user/model@v0.0.1+hf_user/lora@main"
         mr = ModelReference.parse(text)
@@ -32,9 +39,19 @@ class TestModelReference:
         assert mr.lora == ModelPath(path="hf_user/lora", revision="main")
         assert str(mr) == text
 
+    def test_parse_lora_plus_revision_subfolder(self):
+        text = "hf_user/model@v0.0.1*checkpoint-100+hf_user/lora@main*checkpoint-200"
+        mr = ModelReference.parse(text)
+        assert mr.model == ModelPath(path="hf_user/model", revision="v0.0.1", subfolder="checkpoint-100")
+        assert mr.lora == ModelPath(path="hf_user/lora", revision="main", subfolder="checkpoint-200")
+        assert str(mr) == text
+
     def test_parse_bad(self):
         with pytest.raises(RuntimeError):
             ModelReference.parse("@@@@@")
+
+        with pytest.raises(RuntimeError):
+            ModelReference.parse("*****")
 
         with pytest.raises(RuntimeError):
             ModelReference.parse("a+b+c")
