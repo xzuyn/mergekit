@@ -164,6 +164,7 @@ def _copy_tokenizer(
     tokenizer = transformers.AutoTokenizer.from_pretrained(
         donor_model.model.path,
         revision=donor_model.model.revision,
+        subfolder=donor_model.model.subfolder,
         trust_remote_code=trust_remote_code,
     )
     tokenizer.save_pretrained(out_path, safe_serialization=True)
